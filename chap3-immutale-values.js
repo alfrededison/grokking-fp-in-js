@@ -8,3 +8,16 @@ export const abbreviate = (name) => {
     const lastName = name.substring(separator + 1);
     return initial + '. ' + lastName;
 }
+
+/**
+ * 
+ * @param {string[]} plan 
+ * @param {string} newCity 
+ * @param {string} beforeCity 
+ */
+export const replan = (plan, newCity, beforeCity) => {
+    const beforeCityIndex = plan.indexOf(beforeCity)
+    const citiesBefore = plan.slice(0, beforeCityIndex)
+    const citiesAfter = plan.slice(beforeCityIndex, plan.length)
+    return [...citiesBefore, newCity, ...citiesAfter]
+}
