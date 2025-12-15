@@ -140,3 +140,89 @@ describe('ProgrammingLanguages', () => {
         expect(languages.filter(e => e.year > 2000)).toEqual([scalalang])
     })
 });
+
+describe('ReturningFunctions', () => {
+    test('Returning functions from functions', () => {
+        /**
+         * @param {number} n
+         * @returns {(i: number) => boolean}
+         */
+        const largerThan = (n) => (i) => i > n
+
+        const large = [5, 1, 2, 4, 0].filter(largerThan(4))
+        console.log(large)
+        expect(large).toEqual([5])
+        expect([5, 1, 2, 4, 0].filter(largerThan(1))).toEqual([5, 2, 4])
+
+        /**
+         * @param {number} n 
+         * @returns {(i: number) => boolean}
+         */
+        const divisibleBy = (n) => (i) => i % n == 0
+
+        const odds = [5, 1, 2, 4, 15].filter(divisibleBy(5))
+        console.log(odds)
+        expect(odds).toEqual([5, 15])
+        expect([5, 1, 2, 4, 15].filter(divisibleBy(2))).toEqual([2, 4])
+
+        /**
+         * @param {number} n
+         * @returns {(s: string) => boolean}
+         */
+        const shorterThan = (n) => (s) => s.length < n
+
+        const longWords = ["scala", "ada"].filter(shorterThan(4))
+        console.log(longWords)
+        expect(longWords).toEqual(["ada"])
+        expect(["scala", "ada"].filter(shorterThan(7))).toEqual(["scala", "ada"])
+
+        /**
+         * @param {string} s 
+         * @returns {number}
+         */
+        const numberOfS = (s) => s.length - s.replaceAll("s", "").length
+
+        /**
+         * @param {number} moreThan
+         * @returns {(s: string) => boolean}
+         */
+        const containsS = (moreThan) => (s) => numberOfS(s) > moreThan
+
+        const withLotsS = ["rust", "ada"].filter(containsS(2))
+        console.log(withLotsS)
+        expect(withLotsS).toEqual([])
+        expect(["rust", "ada"].filter(containsS(0))).toEqual(["rust"])
+    });
+
+    test('Practicing currying', () => {
+        const largerThan = R.curry((n, i) => i > n)
+
+        const large = [5, 1, 2, 4, 0].filter(largerThan(4))
+        console.log(large)
+        expect(large).toEqual([5])
+        expect([5, 1, 2, 4, 0].filter(largerThan(1))).toEqual([5, 2, 4])
+
+        const divisibleBy = R.curry((n, i) => i % n == 0)
+
+        const odds = [5, 1, 2, 4, 15].filter(divisibleBy(5))
+        console.log(odds)
+        expect(odds).toEqual([5, 15])
+        expect([5, 1, 2, 4, 15].filter(divisibleBy(2))).toEqual([2, 4])
+
+        const shorterThan = R.curry((n, s) => s.length < n)
+
+        const shortWords = ["scala", "ada"].filter(shorterThan(4))
+        console.log(shortWords)
+        expect(shortWords).toEqual(["ada"])
+        expect(["scala", "ada"].filter(shorterThan(7))).toEqual(["scala", "ada"])
+
+        const numberOfS = (s) => s.length - s.replaceAll("s", "").length
+
+        const containsS = R.curry((moreThan, s) => numberOfS(s) > moreThan)
+
+        const withLotsS = ["rust", "ada"].filter(containsS(2))
+        console.log(withLotsS)
+        expect(withLotsS).toEqual([])
+        expect(["rust", "ada"].filter(containsS(0))).toEqual(["rust"])
+    });
+});
