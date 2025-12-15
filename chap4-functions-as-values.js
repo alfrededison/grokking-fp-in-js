@@ -1,3 +1,5 @@
+import { Record } from "immutable"
+
 /**
  * @param {string} word 
  */
@@ -17,3 +19,5 @@ export const negative = (i) => -i
  * @param {Array} s
  */
 export const len = (s) => s.length
+
+export const ProgrammingLanguage = Record({ name: "", year: 0 })

@@ -1,4 +1,4 @@
-import { len, score, numberOfS, negative } from './chap4-functions-as-values';
+import { len, score, numberOfS, negative, ProgrammingLanguage } from './chap4-functions-as-values';
 import * as R from 'ramda';
 
 describe('ch04_PassingFunctions', () => {
@@ -107,4 +107,36 @@ describe('ch04_PassingFunctions', () => {
         console.log(max2)
         expect(max2).toEqual(15)
     });
+});
+
+describe('ProgrammingLanguages', () => {
+    test('Creating and using ProgrammingLanguage records', () => {
+        const javalang = ProgrammingLanguage({ name: "Java", year: 1995 })
+        const scalalang = ProgrammingLanguage({ name: "Scala", year: 2004 })
+
+        expect(javalang.name).toEqual("Java")
+        console.log(javalang.name)
+
+        console.log(scalalang.name.length)
+        expect(scalalang.name.length).toEqual(5)
+
+        console.log((scalalang.year + javalang.year) / 2)
+        expect((scalalang.year + javalang.year) / 2).toEqual(1999.5)
+
+        const languages = [javalang, scalalang]
+
+        console.log(languages)
+        expect(languages).toEqual([ProgrammingLanguage({ name: "Java", year: 1995 }), ProgrammingLanguage({ name: "Scala", year: 2004 })])
+
+        const names = languages.map(lang => lang.name)
+        console.log(names)
+        expect(names).toEqual(["Java", "Scala"])
+        const young = languages.filter(lang => lang.year > 2000)
+        console.log(young)
+        expect(young).toEqual([scalalang])
+
+        expect(languages.map(R.prop("name"))).toEqual(["Java", "Scala"])
+
+        expect(languages.filter(e => e.year > 2000)).toEqual([scalalang])
+    })
 });
