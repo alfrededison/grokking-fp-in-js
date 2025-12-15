@@ -1,0 +1,21 @@
+{
+  "name": "grokking-fp-in",
+  "version": "1.0.0",
+  "description": "Practice Grokking Functional Programming with JS",
+  "type": "module",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix"
+  },
+  "author": "Hieu Nguyen",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-env": "^7.28.5",
+    "babel-jest": "^30.2.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-functional": "^9.0.2",
+    "jest": "^30.2.0"
+  }
+}
