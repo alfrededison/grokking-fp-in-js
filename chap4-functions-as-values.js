@@ -1,3 +1,5 @@
+import { Record } from "immutable"
+
 /**
  * @param {string} word 
  */
@@ -14,3 +16,5 @@ export const numberOfS = (s) => s.length - s.replaceAll("s", "").length
 export const negative = (i) => -i
 
 export const len = (s) => s.length
+
+export const ProgrammingLanguage = Record({ name: "", year: 0 })
