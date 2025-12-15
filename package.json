@@ -19,6 +19,7 @@
     "jest": "^30.2.0"
   },
   "dependencies": {
+    "folktale": "^2.3.2",
     "immutable": "^5.1.4",
     "ramda": "^0.32.0"
   }
