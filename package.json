@@ -17,5 +17,8 @@
     "eslint": "^9.39.2",
     "eslint-plugin-functional": "^9.0.2",
     "jest": "^30.2.0"
+  },
+  "dependencies": {
+    "ramda": "^0.32.0"
   }
 }
