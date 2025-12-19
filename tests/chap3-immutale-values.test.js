@@ -1,3 +1,5 @@
+import { List } from '../src/libs';
+
 /**
  * 
  * @param {string} name
@@ -11,15 +13,15 @@ const abbreviate = (name) => {
 
 /**
  * 
- * @param {string[]} plan 
+ * @param {List<string>} plan 
  * @param {string} newCity 
  * @param {string} beforeCity 
  */
 const replan = (plan, newCity, beforeCity) => {
     const beforeCityIndex = plan.indexOf(beforeCity)
     const citiesBefore = plan.slice(0, beforeCityIndex)
-    const citiesAfter = plan.slice(beforeCityIndex, plan.length)
-    return [...citiesBefore, newCity, ...citiesAfter]
+    const citiesAfter = plan.slice(beforeCityIndex, plan.size)
+    return citiesBefore.push(newCity).concat(citiesAfter)
 }
 
 test('abbreviates', () => {
@@ -29,13 +31,13 @@ test('abbreviates', () => {
 });
 
 test('replans', () => {
-    const planA = ["Paris", "Berlin", "Kraków"]
+    const planA = List.of("Paris", "Berlin", "Kraków")
     console.log("Plan A: " + planA)
 
     const planB = replan(planA, "Vienna", "Kraków")
-    expect(planB).toEqual(["Paris", "Berlin", "Vienna", "Kraków"])
+    expect(planB).toEqual(List.of("Paris", "Berlin", "Vienna", "Kraków"))
     console.log("Plan B: " + planB)
     
-    expect(planA).toEqual(["Paris", "Berlin", "Kraków"])
+    expect(planA).toEqual(List.of("Paris", "Berlin", "Kraków"))
     console.log("Plan A: " + planA)
 });

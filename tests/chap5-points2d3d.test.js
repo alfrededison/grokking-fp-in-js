@@ -1,4 +1,4 @@
-import { Record } from "immutable"
+import { List, Record } from "../src/libs"
 
 /** Given lists of coordinates,
   * create all possible 2D & 3D points.
@@ -9,28 +9,28 @@ const Point3d = Record({ x: 0, y: 0, z: 0 })
 describe('Points2d3d', () => {
 
     test('Practicing nested flatMaps', () => {
-        const points = [1].flatMap(x =>
-            [-2, 7].map(y =>
+        const points = List.of(1).flatMap(x =>
+            List.of(-2, 7).map(y =>
                 Point({x, y})
             )
         )
-        expect(points).toEqual([Point({x: 1, y: -2}), Point({x: 1, y: 7})])
-        expect([1].flatMap(x => [-2, 7, 10].map(y => Point({x, y}))).length).toEqual(3)
-        expect([1, 2].flatMap(x => [-2, 7].map(y => Point({x, y}))).length).toEqual(4)
-        expect([1, 2].flatMap(x => [-2, 7, 10].map(y => Point({x, y}))).length).toEqual(6)
-        expect([].flatMap(x => [-2, 7].map(y => Point({x, y}))).length).toEqual(0)
-        expect([1].flatMap(x => [].map(y => Point({x, y}))).length).toEqual(0)
+        expect(points).toEqual(List.of(Point({x: 1, y: -2}), Point({x: 1, y: 7})))
+        expect(List.of(1).flatMap(x => List.of(-2, 7, 10).map(y => Point({x, y}))).size).toEqual(3)
+        expect(List.of(1, 2).flatMap(x => List.of(-2, 7).map(y => Point({x, y}))).size).toEqual(4)
+        expect(List.of(1, 2).flatMap(x => List.of(-2, 7, 10).map(y => Point({x, y}))).size).toEqual(6)
+        expect(List().flatMap(x => List.of(-2, 7).map(y => Point({x, y}))).size).toEqual(0)
+        expect(List.of(1).flatMap(x => List.of().map(y => Point({x, y}))).size).toEqual(0)
     })
 
     test('flatMaps vs. for comprehensions', () => {
-        const xs = [1]
-        const ys = [-2, 7]
+        const xs = List.of(1)
+        const ys = List.of(-2, 7)
 
         expect(xs.flatMap(x =>
             ys.map(y =>
                 Point({x, y})
             )
-        )).toEqual([Point({x: 1, y: -2}), Point({x: 1, y: 7})])
+        )).toEqual(List.of(Point({x: 1, y: -2}), Point({x: 1, y: 7})))
 
         // TODO
         // assert((for {
@@ -38,7 +38,7 @@ describe('Points2d3d', () => {
         //   y <- ys
         // } yield Point(x, y)) == List(Point(1, -2), Point(1, 7)))
 
-        const zs = [3, 4]
+        const zs = List.of(3, 4)
 
         // TODO
         // assert(
@@ -58,7 +58,7 @@ describe('Points2d3d', () => {
                     )
                 )
             )
-        ).toEqual([Point3d({x: 1, y: -2, z: 3}), Point3d({x: 1, y: -2, z: 4}), Point3d({x: 1, y: 7, z: 3}), Point3d({x: 1, y: 7, z: 4})])
+        ).toEqual(List.of(Point3d({x: 1, y: -2, z: 3}), Point3d({x: 1, y: -2, z: 4}), Point3d({x: 1, y: 7, z: 3}), Point3d({x: 1, y: 7, z: 4})))
     })
 })
 
@@ -66,8 +66,8 @@ describe('Points2d3d', () => {
   * calculate which points are inside circles defined by these radiuses.
   */
 test('PointsInsideCircles', () => {
-  const points   = [Point({x: 5, y: 2}), Point({x: 1, y: 1})]
-  const radiuses = [2, 1]
+  const points   = List.of(Point({x: 5, y: 2}), Point({x: 1, y: 1}))
+  const radiuses = List.of(2, 1)
 
   /**
    * 
@@ -109,7 +109,7 @@ test('PointsInsideCircles', () => {
    * @param {Point} point 
    * @param {number} radius 
    */
-  const insideFilter = (point, radius) => isInside(point, radius) ? [point] : []
+  const insideFilter = (point, radius) => isInside(point, radius) ? List.of(point) : List()
 
 //   assert((for {
 //     r       <- radiuses
@@ -118,7 +118,7 @@ test('PointsInsideCircles', () => {
 //   } yield s"$inPoint is within a radius of $r") == List("Point(1,1) is within a radius of 2"))
 
   // Coffee Break: Filtering Techniques
-  const riskyRadiuses = [-10, 0, 2]
+  const riskyRadiuses = List.of(-10, 0, 2)
 
 //   assert((for {
 //     r     <- riskyRadiuses
@@ -149,7 +149,7 @@ test('PointsInsideCircles', () => {
    * 
    * @param {number} radius 
    */
-  const validateRadius = (radius) => radius > 0 ? [radius] : []
+  const validateRadius = (radius) => radius > 0 ? List.of(radius) : List()
 
 //   assert((for {
 //     r           <- riskyRadiuses
@@ -165,18 +165,18 @@ test('PointsInsideCircles', () => {
         insideFilter(point, validRadius).map(inPoint => `${inPoint} is within a radius of ${r}`)
       )
     )
-  )).toEqual(["Record { x: 1, y: 1 } is within a radius of 2"])
+  )).toEqual(List.of("Record { x: 1, y: 1 } is within a radius of 2"))
 })
 
 test('SequencedNestedFlatMaps', () => {
-  const s = [1, 2, 3]
-    .flatMap(a => [a * 2])
-    .flatMap(b => [b, b + 10])
-  expect(s).toEqual([2, 12, 4, 14, 6, 16])
+  const s = List.of(1, 2, 3)
+    .flatMap(a => List.of(a * 2))
+    .flatMap(b => List.of(b, b + 10))
+  expect(s).toEqual(List.of(2, 12, 4, 14, 6, 16))
 
-  const n = [1, 2, 3]
+  const n = List.of(1, 2, 3)
     .flatMap(a =>
-      [a * 2].flatMap(b => [b, b + 10])
+      List.of(a * 2).flatMap(b => List.of(b, b + 10))
     )
   expect(s).toEqual(n)
 })

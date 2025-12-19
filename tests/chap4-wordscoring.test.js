@@ -1,4 +1,4 @@
-import * as R from 'ramda';
+import { curry, List } from "../src/libs"
 
 describe('WordScoringScala', () => {
   /**
@@ -7,51 +7,49 @@ describe('WordScoringScala', () => {
   const score = (word) => word.replaceAll("a", "").length
 
   test('case 1', () => { // incorrect result (java has scored 2 and rust has scored 4)
-    expect(R.sortBy(score, ["rust", "java"])).toEqual(["java", "rust"])
+    expect(List.of("rust", "java").sortBy(score)).toEqual(List.of("java", "rust"))
   })
 
   // see "sortBy" section in ch04_PassingFunctions
 
-  const words = ["ada", "haskell", "scala", "java", "rust"]
+  const words = List.of("ada", "haskell", "scala", "java", "rust")
 
   test('case 2', () => {
-    const wordRanking = R.reverse(R.sortBy(score, words))
+    const wordRanking = words.sortBy(score).reverse()
     console.log(wordRanking)
-    expect(wordRanking).toEqual(["haskell", "rust", "scala", "java", "ada"])
+    expect(wordRanking).toEqual(List.of("haskell", "rust", "scala", "java", "ada"))
   })
 
   test('case 3', () => {
     /**
      * @param {(word: String) => Int} wordScore 
-     * @param {[String]} words 
-     * @returns {[String]}
+     * @param {List<string>} words 
      */
     const rankedWords = (wordScore, words) => {
       const negativeScore = (word) => -wordScore(word)
-      return R.sortBy(negativeScore, words)
+      return words.sortBy(negativeScore)
     }
 
-    expect(rankedWords(score, ["rust", "java"])).toEqual(["rust", "java"])
+    expect(rankedWords(score, List.of("rust", "java"))).toEqual(List.of("rust", "java"))
 
     const wordRanking = rankedWords(score, words)
     console.log(wordRanking)
-    expect(wordRanking).toEqual(["haskell", "rust", "scala", "java", "ada"])
+    expect(wordRanking).toEqual(List.of("haskell", "rust", "scala", "java", "ada"))
   })
 
   test('case 4', () => {
     /**
      * @param {(word: String) => Int} wordScore 
-     * @param {[String]} words 
-     * @returns {[String]}
+     * @param {List<string>} words 
      */
-    const rankedWords = (wordScore, words) => R.reverse(R.sortBy(wordScore, words))
+    const rankedWords = (wordScore, words) => words.sortBy(wordScore).reverse()
 
-    expect(rankedWords(score, ["rust", "java"])).toEqual(["rust", "java"])
+    expect(rankedWords(score, List.of("rust", "java"))).toEqual(List.of("rust", "java"))
 
     {
       const wordRanking = rankedWords(score, words)
       console.log(wordRanking)
-      expect(wordRanking).toEqual(["haskell", "rust", "scala", "java", "ada"])
+      expect(wordRanking).toEqual(List.of("haskell", "rust", "scala", "java", "ada"))
     }
 
     /**
@@ -66,7 +64,7 @@ describe('WordScoringScala', () => {
     {
       const wordRanking = rankedWords(scoreWithBonus, words)
       console.log(wordRanking)
-      expect(wordRanking).toEqual(["scala", "haskell", "rust", "java", "ada"])
+      expect(wordRanking).toEqual(List.of("scala", "haskell", "rust", "java", "ada"))
     }
 
     /**
@@ -78,7 +76,7 @@ describe('WordScoringScala', () => {
     {
       const wordRanking = rankedWords(w => score(w) + bonus(w), words)
       console.log(wordRanking)
-      expect(wordRanking).toEqual(["scala", "haskell", "rust", "java", "ada"])
+      expect(wordRanking).toEqual(List.of("scala", "haskell", "rust", "java", "ada"))
     }
 
     // Coffee break
@@ -91,25 +89,24 @@ describe('WordScoringScala', () => {
     {
       const wordRanking = rankedWords(w => score(w) + bonus(w) - penalty(w), words)
       console.log(wordRanking)
-      expect(wordRanking).toEqual(["java", "scala", "ada", "haskell", "rust"])
+      expect(wordRanking).toEqual(List.of("java", "scala", "ada", "haskell", "rust"))
     }
 
     // map
     /**
      * @param {(word: String) => Int} wordScore 
-     * @param {[String]} words 
-     * @returns {[Int]}
+     * @param {List<string>} words 
      */
     const wordScores = (wordScore, words) => {
       return words.map(wordScore)
     }
 
-    expect(wordScores(score, ["rust", "java"])).toEqual([4, 2])
+    expect(wordScores(score, List.of("rust", "java"))).toEqual(List.of(4, 2))
 
     {
       const scores = wordScores(w => score(w) + bonus(w) - penalty(w), words)
       console.log(scores)
-      expect(scores).toEqual([1, -1, 1, 2, -3])
+      expect(scores).toEqual(List.of(1, -1, 1, 2, -3))
     }
 
     // see "Practicing map" in ch04_PassingFunctions
@@ -118,19 +115,18 @@ describe('WordScoringScala', () => {
     {
       /**
        * @param {(word: String) => Int} wordScore 
-       * @param {[String]} words 
-       * @returns {[String]}
+       * @param {List<string>} words 
        */
       const highScoringWords = (wordScore, words) => {
         return words.filter(word => wordScore(word) > 1)
       }
 
       // note that we don't show what function is passed as wordScore because it doesn't matter
-      expect(highScoringWords(w => score(w) + bonus(w) - penalty(w), ["rust", "java"])).toEqual(["java"])
+      expect(highScoringWords(w => score(w) + bonus(w) - penalty(w), List.of("rust", "java"))).toEqual(List.of("java"))
 
       const result = highScoringWords(w => score(w) + bonus(w) - penalty(w), words)
       console.log(result)
-      expect(result).toEqual(["java"])
+      expect(result).toEqual(List.of("java"))
     }
 
     // see "Practicing filter" in ch04_PassingFunctions
@@ -139,8 +135,7 @@ describe('WordScoringScala', () => {
     {
       /**
        * @param {(word: String) => Int} wordScore 
-       * @param {[String]} words 
-       * @returns {[String]}
+       * @param {List<string>} words 
        */
       const highScoringWords = (wordScore, words) => {
         return words.filter(word => wordScore(word) > 1)
@@ -148,8 +143,7 @@ describe('WordScoringScala', () => {
 
       /**
        * @param {(word: String) => Int} wordScore 
-       * @param {[String]} words 
-       * @returns {[String]}
+       * @param {List<string>} words 
        */
       const highScoringWords0 = (wordScore, words) => {
         return words.filter(word => wordScore(word) > 0)
@@ -157,8 +151,7 @@ describe('WordScoringScala', () => {
 
       /**
        * @param {(word: String) => Int} wordScore 
-       * @param {[String]} words 
-       * @returns {[String]}
+       * @param {List<string>} words 
        */
       const highScoringWords5 = (wordScore, words) => {
         return words.filter(word => wordScore(word) > 5)
@@ -166,20 +159,20 @@ describe('WordScoringScala', () => {
 
       const result = highScoringWords(w => score(w) + bonus(w) - penalty(w), words)
       console.log(result)
-      expect(result).toEqual(["java"])
+      expect(result).toEqual(List.of("java"))
       const result2 = highScoringWords0(w => score(w) + bonus(w) - penalty(w), words)
       console.log(result2)
-      expect(result2).toEqual(["ada", "scala", "java"])
+      expect(result2).toEqual(List.of("ada", "scala", "java"))
       const result3 = highScoringWords5(w => score(w) + bonus(w) - penalty(w), words)
       console.log(result3)
-      expect(result3).toEqual([])
+      expect(result3).toEqual(List())
     }
 
     // RETURNING FUNCTIONS #1: adding a new parameter
     {
       /**
        * @param {(word: String) => Int} wordScore 
-       * @param {[String]} words 
+       * @param {List<string>} words 
        * @param {Int} higherThan
        */
       const highScoringWords = (wordScore, words, higherThan) => {
@@ -189,21 +182,21 @@ describe('WordScoringScala', () => {
       // PROBLEM still there:
       const result = highScoringWords(w => score(w) + bonus(w) - penalty(w), words, 1)
       console.log(result)
-      expect(result).toEqual(["java"])
+      expect(result).toEqual(List.of("java"))
       const result2 = highScoringWords(w => score(w) + bonus(w) - penalty(w), words, 0)
       console.log(result2)
-      expect(result2).toEqual(["ada", "scala", "java"])
+      expect(result2).toEqual(List.of("ada", "scala", "java"))
       const result3 = highScoringWords(w => score(w) + bonus(w) - penalty(w), words, 5)
       console.log(result3)
-      expect(result3).toEqual([])
+      expect(result3).toEqual(List())
     }
 
     // RETURNING FUNCTIONS #2: function returns a function
     {
       /**
        * @param {(word: String) => Int} wordScore 
-       * @param {[String]} words 
-       * @returns {(higherThan: Int) => [String]}
+       * @param {List<string>} words 
+       * @returns {(higherThan: Int) => List<string>}
        */
       const highScoringWords = (wordScore, words) => higherThan =>
         words.filter(word => wordScore(word) > higherThan)
@@ -212,15 +205,15 @@ describe('WordScoringScala', () => {
 
       const result = wordsWithScoreHigherThan(1)
       console.log(result)
-      expect(result).toEqual(["java"])
+      expect(result).toEqual(List.of("java"))
 
       const result2 = wordsWithScoreHigherThan(0)
       console.log(result2)
-      expect(result2).toEqual(["ada", "scala", "java"])
+      expect(result2).toEqual(List.of("ada", "scala", "java"))
 
       const result3 = wordsWithScoreHigherThan(5)
       console.log(result3)
-      expect(result3).toEqual([])
+      expect(result3).toEqual(List())
     }
 
     // see "Returning functions from functions" in ch04_ReturningFunctions
@@ -230,34 +223,34 @@ describe('WordScoringScala', () => {
       const highScoringWords = (wordScore, words) => higherThan =>
         words.filter(word => wordScore(word) > higherThan)
 
-      const words2 = ["football", "f1", "hockey", "basketball"]
+      const words2 = List.of("football", "f1", "hockey", "basketball")
 
       const wordsWithScoreHigherThan = highScoringWords(w => score(w) + bonus(w) - penalty(w), words)
       const words2WithScoreHigherThan = highScoringWords(w => score(w) + bonus(w) - penalty(w), words2)
 
       const result = wordsWithScoreHigherThan(1)
       console.log(result)
-      expect(result).toEqual(["java"])
+      expect(result).toEqual(List.of("java"))
 
       const result2 = wordsWithScoreHigherThan(0)
       console.log(result2)
-      expect(result2).toEqual(["ada", "scala", "java"])
+      expect(result2).toEqual(List.of("ada", "scala", "java"))
 
       const result3 = wordsWithScoreHigherThan(5)
       console.log(result3)
-      expect(result3).toEqual([])
+      expect(result3).toEqual(List())
 
       const result4 = words2WithScoreHigherThan(1)
       console.log(result4)
-      expect(result4).toEqual(["football", "f1", "hockey"])
+      expect(result4).toEqual(List.of("football", "f1", "hockey"))
 
       const result5 = words2WithScoreHigherThan(0)
       console.log(result5)
-      expect(result5).toEqual(["football", "f1", "hockey", "basketball"])
+      expect(result5).toEqual(List.of("football", "f1", "hockey", "basketball"))
 
       const result6 = words2WithScoreHigherThan(5)
       console.log(result6)
-      expect(result6).toEqual(["football", "hockey"])
+      expect(result6).toEqual(List.of("football", "hockey"))
     }
 
     // RETURNING FUNCTIONS #4: returning functions from functions that return functions
@@ -265,90 +258,89 @@ describe('WordScoringScala', () => {
       /**
        * 
        * @param {string} wordScore 
-       * @returns {(higherThan: number) => (words: [string]) => ([string])}
+       * @returns {(higherThan: number) => (words: List<string>) => (List<string>)}
        */
       const highScoringWords = (wordScore) => higherThan => words =>
         words.filter(word => wordScore(word) > higherThan)
 
-      const words2 = ["football", "f1", "hockey", "basketball"]
+      const words2 = List.of("football", "f1", "hockey", "basketball")
 
       const wordsWithScoreHigherThan = highScoringWords(w => score(w) + bonus(w) - penalty(w)) // just one function!
 
       const result = wordsWithScoreHigherThan(1)(words) // more readable
       console.log(result)
-      expect(result).toEqual(["java"])
+      expect(result).toEqual(List.of("java"))
 
       const result2 = wordsWithScoreHigherThan(0)(words)
       console.log(result2)
-      expect(result2).toEqual(["ada", "scala", "java"])
+      expect(result2).toEqual(List.of("ada", "scala", "java"))
 
       const result3 = wordsWithScoreHigherThan(5)(words)
       console.log(result3)
-      expect(result3).toEqual([])
+      expect(result3).toEqual(List())
 
       const result4 = wordsWithScoreHigherThan(1)(words2)
       console.log(result4)
-      expect(result4).toEqual(["football", "f1", "hockey"])
+      expect(result4).toEqual(List.of("football", "f1", "hockey"))
 
       const result5 = wordsWithScoreHigherThan(0)(words2)
       console.log(result5)
-      expect(result5).toEqual(["football", "f1", "hockey", "basketball"])
+      expect(result5).toEqual(List.of("football", "f1", "hockey", "basketball"))
 
       const result6 = wordsWithScoreHigherThan(5)(words2)
       console.log(result6)
-      expect(result6).toEqual(["football", "hockey"])
+      expect(result6).toEqual(List.of("football", "hockey"))
     }
 
     // RETURNING FUNCTIONS #5: currying
     {
-      const highScoringWords = R.curry((wordScore, higherThan, words) => {
+      const highScoringWords = curry((wordScore, higherThan, words) => {
         return words.filter(word => wordScore(word) > higherThan)
       })
 
-      const words2 = ["football", "f1", "hockey", "basketball"]
+      const words2 = List.of("football", "f1", "hockey", "basketball")
 
       const wordsWithScoreHigherThan = highScoringWords(w => score(w) + bonus(w) - penalty(w)) // just one function!
 
       const result = wordsWithScoreHigherThan(1)(words) // more readable
       console.log(result)
-      expect(result).toEqual(["java"])
+      expect(result).toEqual(List.of("java"))
 
       const result2 = wordsWithScoreHigherThan(0)(words)
       console.log(result2)
-      expect(result2).toEqual(["ada", "scala", "java"])
+      expect(result2).toEqual(List.of("ada", "scala", "java"))
 
       const result3 = wordsWithScoreHigherThan(5)(words)
       console.log(result3)
-      expect(result3).toEqual([])
+      expect(result3).toEqual(List())
 
       const result4 = wordsWithScoreHigherThan(1)(words2)
       console.log(result4)
-      expect(result4).toEqual(["football", "f1", "hockey"])
+      expect(result4).toEqual(List.of("football", "f1", "hockey"))
 
       const result5 = wordsWithScoreHigherThan(0)(words2)
       console.log(result5)
-      expect(result5).toEqual(["football", "f1", "hockey", "basketball"])
+      expect(result5).toEqual(List.of("football", "f1", "hockey", "basketball"))
 
       const result6 = wordsWithScoreHigherThan(5)(words2)
       console.log(result6)
-      expect(result6).toEqual(["football", "hockey"])
+      expect(result6).toEqual(List.of("football", "hockey"))
     }
 
     // see "Practicing currying" in ch04_ReturningFunctions
 
     /**
      * @param {(word: String) => Int} wordScore 
-     * @param {[String]} words 
-     * @returns {Int}
+     * @param {List<string>} words 
      */
     const cumulativeScore = (wordScore, words) => {
-      return R.reduce((total, word) =>
+      return words.reduce((total, word) =>
         total + wordScore(word)
-        , 0, words)
+        , 0)
     }
 
     {
-      const result = cumulativeScore(w => score(w) + bonus(w) - penalty(w), ["rust", "java"])
+      const result = cumulativeScore(w => score(w) + bonus(w) - penalty(w), List.of("rust", "java"))
       console.log(result)
       expect(result).toEqual(-1)
     }
