@@ -1,5 +1,27 @@
-import { len, score, numberOfS, negative, ProgrammingLanguage } from './chap4-functions-as-values';
 import * as R from 'ramda';
+import { Record } from "immutable"
+
+/**
+ * @param {string} word 
+ */
+const score = (word) => word.replaceAll("a", "").length
+
+/**
+ * @param {string} s 
+ */
+const numberOfS = (s) => s.length - s.replaceAll("s", "").length
+
+/**
+ * @param {number} i 
+ */
+const negative = (i) => -i
+
+/**
+ * @param {string} s
+ */
+const len = (s) => s.length
+
+const ProgrammingLanguage = Record({ name: "", year: 0 })
 
 describe('ch04_PassingFunctions', () => {
     test('functions as values', () => {
