@@ -44,6 +44,22 @@ Either.fn.toIntEither = function toIntEither(leftValue) {
     return this.isRight() ? this.value.toIntOption().toRight(leftValue) : this;
 }
 
+Maybe.fn.forall = function forall(predicate) {
+    return this.isSome() ? predicate(this.value) : true;
+}
+
+Maybe.fn.filter = function filter(predicate) {
+    return this.isSome() && predicate(this.value) ? this : None();
+}
+
+Maybe.fn.exists = function exists(predicate) {
+    return this.isSome() ? predicate(this.value) : false;
+}
+
+Maybe.fn.contains = function contains(value) {
+    return this.isSome() ? this.value === value : false;
+}
+
 Maybe.fn.flatten = Maybe.fn.flat
 Either.fn.flatten = Either.fn.flat
 
