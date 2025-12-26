@@ -2,13 +2,15 @@
 export * from 'ramda';
 
 // Consolidate Types and FP utils
-import { liftN } from 'ramda';
+import { liftN, any } from 'ramda';
 import { Record, List } from 'immutable';
 import * as Futils from 'futils';
 
 const { Maybe, Either } = Futils.data;
 const { Some, None } = Maybe;
 const { Left, Right } = Either;
+const { UnionType } = Futils.adt;
+const { Show, Eq, Ord } = Futils.generics;
 
 /* eslint-disable */
 Maybe.fn.toRight = function toRight(leftValue) {
@@ -44,8 +46,40 @@ Either.fn.toIntEither = function toIntEither(leftValue) {
     return this.isRight() ? this.value.toIntOption().toRight(leftValue) : this;
 }
 
+Maybe.fn.forall = function forall(predicate) {
+    return this.isSome() ? predicate(this.value) : true;
+}
+
+Maybe.fn.filter = function filter(predicate) {
+    return this.isSome() && predicate(this.value) ? this : None();
+}
+
+Maybe.fn.exists = function exists(predicate) {
+    return this.isSome() ? predicate(this.value) : false;
+}
+
+Maybe.fn.contains = function contains(value) {
+    return this.isSome() ? this.value === value : false;
+}
+
 Maybe.fn.flatten = Maybe.fn.flat
 Either.fn.flatten = Either.fn.flat
+
+class Hash {
+    static derive(ctor) {
+        if (ctor && ctor.prototype && !ctor.prototype.hashCode) {
+            ctor.prototype.hashCode = function () {
+                return JSON.stringify(this)
+            };
+            return ctor;
+        }
+        throw `Cannot derive Hashable for ${ctor}`;
+    }
+}
+
+List.prototype.exists = function exists(predicate) {
+    return any(predicate, this.toArray());
+}
 
 const ffor = (fn) => (...args) => liftN(args.length, fn)(...args);
 
@@ -54,6 +88,11 @@ const ffor = (fn) => (...args) => liftN(args.length, fn)(...args);
 export {
     Record,
     List,
+    UnionType,
+    Show,
+    Eq,
+    Ord,
+    Hash,
     Some,
     None,
     Left,
