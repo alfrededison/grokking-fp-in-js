@@ -23,6 +23,9 @@ export type Some<T> = {
     toRight<L>(leftValue: L): Either<L, T>;
     toList(): List<T>;
     toIntOption(): Maybe<number>;
+    exists(predicate: (value: T) => boolean): boolean;
+    forall(predicate: (value: T) => boolean): boolean;
+    filter(predicate: (value: T) => boolean): Maybe<T>;
 };
 export type None = {
     readonly _tag: 'None';
@@ -46,6 +49,9 @@ export type None = {
     toRight<L>(leftValue: L): Either<L, any>;
     toList(): List<any>;
     toIntOption(): Maybe<number>;
+    exists(predicate: (value: never) => boolean): boolean;
+    forall(predicate: (value: never) => boolean): boolean;
+    filter(predicate: (value: never) => boolean): None;
 };
 export type Maybe<T> = Some<T> | None;
 export function Some<T>(value: T): Some<T>;
