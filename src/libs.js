@@ -3,7 +3,7 @@ export * from 'ramda';
 
 // Consolidate Types and FP utils
 import { liftN, any } from 'ramda';
-import { Record, List, Set } from 'immutable';
+import { Record, List, Set, Map } from 'immutable';
 import * as Futils from 'futils';
 
 const { Maybe, Either } = Futils.data;
@@ -89,6 +89,7 @@ export {
     Record,
     List,
     Set,
+    Map,
     UnionType,
     Show,
     Eq,
