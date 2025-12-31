@@ -3,7 +3,7 @@ export * from 'ramda';
 
 // Consolidate Types and FP utils
 import { liftN, any } from 'ramda';
-import { Record, List } from 'immutable';
+import { Record, List, Set } from 'immutable';
 import * as Futils from 'futils';
 
 const { Maybe, Either } = Futils.data;
@@ -88,6 +88,7 @@ const ffor = (fn) => (...args) => liftN(args.length, fn)(...args);
 export {
     Record,
     List,
+    Set,
     UnionType,
     Show,
     Eq,
