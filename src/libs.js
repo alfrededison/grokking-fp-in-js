@@ -81,6 +81,16 @@ List.prototype.exists = function exists(predicate) {
     return any(predicate, this.toArray());
 }
 
+List.prototype.headOption = function headOption() {
+    return this.isEmpty() ? None() : Some(this.first());
+}
+
+import { Future, alt } from 'fluture';
+
+Future.prototype.orElse = function orElse(anotherFuture) {
+    return this.pipe(alt(anotherFuture));
+}
+
 const ffor = (fn) => (...args) => liftN(args.length, fn)(...args);
 
 /* eslint-enable */
