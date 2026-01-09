@@ -87,6 +87,12 @@ List.prototype.headOption = function headOption() {
 
 const ffor = (fn) => (...args) => liftN(args.length, fn)(...args);
 
+import { Effect, Stream } from 'effect';
+
+const StreamToList = (stream) => stream
+    .pipe(Stream.runCollect)
+    .pipe(Effect.map(List))
+
 /* eslint-enable */
 
 export {
@@ -106,4 +112,5 @@ export {
     Maybe,
     Either,
     ffor,
+    StreamToList,
 }
