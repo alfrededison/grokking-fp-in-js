@@ -3,7 +3,7 @@ export * from 'ramda';
 
 // Consolidate Types and FP utils
 import { liftN, any } from 'ramda';
-import { Record, List, Set, Map } from 'immutable';
+import { Record, List, Set, Map, Repeat, Range } from 'immutable';
 import * as Futils from 'futils';
 
 const { Maybe, Either } = Futils.data;
@@ -83,6 +83,14 @@ List.prototype.exists = function exists(predicate) {
 
 List.prototype.headOption = function headOption() {
     return this.isEmpty() ? None() : Some(this.first());
+}
+
+List.repeat = Repeat;
+List.range = Range;
+
+Map.prototype.getOption = function getOption(key) {
+    const value = this.get(key);
+    return value === undefined ? None() : Some(value);
 }
 
 const ffor = (fn) => (...args) => liftN(args.length, fn)(...args);
