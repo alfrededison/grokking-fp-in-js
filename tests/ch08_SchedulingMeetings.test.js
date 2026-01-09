@@ -1,5 +1,5 @@
 import { Some, None, Record, List, range, always } from '../src/libs';
-import F from 'fluture';
+import { Effect } from 'effect';
 
 // PREREQUISITE 1: MeetingTime model
 const MeetingTimeModel = Record({
@@ -24,15 +24,6 @@ const createMeetingApiCall = (names, meetingTime) => {
     console.log(`SIDE-EFFECT: Created meeting ${meetingTime} for ${names}`);
 }
 
-const expectError = (e) => {
-    expect(e).toBeInstanceOf(Error);
-    expect(e.message).toBe('Connection error');
-}
-
-const expectNothing = (e) => {
-    expect(e).toBeUndefined();
-}
-
 describe('ch08_SchedulingMeetings', () => {
     // STEP 1: Introduce IO
     /**
@@ -40,7 +31,7 @@ describe('ch08_SchedulingMeetings', () => {
      * @param {string} name 
      */
     const calendarEntries = (name) => {
-        return F.attempt(() => calendarEntriesApiCall(name));
+        return Effect.try(() => calendarEntriesApiCall(name));
     }
 
     /**
@@ -49,7 +40,7 @@ describe('ch08_SchedulingMeetings', () => {
      * @param {MeetingTimeModel} meeting 
      */
     const createMeeting = (names, meeting) => {
-        return F.attempt(() => createMeetingApiCall(names, meeting));
+        return Effect.try(() => createMeetingApiCall(names, meeting));
     }
 
     /**
@@ -57,23 +48,21 @@ describe('ch08_SchedulingMeetings', () => {
      * @param {string} person1 
      * @param {string} person2 
      */
-    const scheduledMeetings = (person1, person2) => F.go(function* () {
-        const person1Entries = yield calendarEntries(person1);
-        const person2Entries = yield calendarEntries(person2);
+    const scheduledMeetings = (person1, person2) => Effect.gen(function* () {
+        const person1Entries = yield* calendarEntries(person1);
+        const person2Entries = yield* calendarEntries(person2);
         return person1Entries.concat(person2Entries);
     });
 
     test('runStep1: scheduledMeetings success', () => {
-        scheduledMeetings("Alice", "Bob").pipe(F.fork
-            (expectError)
-            (meetings => {
-                expect(meetings).toEqual(List.of(
-                    MeetingTime(8, 10),
-                    MeetingTime(11, 12),
-                    MeetingTime(9, 10)
-                ));
-            })
-        );
+        const prog = scheduledMeetings("Alice", "Bob");
+        Effect.runPromise(prog)
+            .then(meetings => expect(meetings).toEqual(List.of(
+                MeetingTime(8, 10),
+                MeetingTime(11, 12),
+                MeetingTime(9, 10)
+            )))
+            .catch(e => expect(e.toJSON()).toHaveProperty('cause.failure.error.message', 'Connection error'));
     });
 
     // Coffee Break
@@ -105,8 +94,8 @@ describe('ch08_SchedulingMeetings', () => {
          * @param {string} person2 
          * @param {number} lengthHours 
          */
-        schedule: (person1, person2, lengthHours) => F.go(function* () {
-            const existingMeetings = yield scheduledMeetings(person1, person2);
+        schedule: (person1, person2, lengthHours) => Effect.gen(function* () {
+            const existingMeetings = yield* scheduledMeetings(person1, person2);
             const meetings = possibleMeetings(existingMeetings, 8, 16, lengthHours);
             return meetings.headOption();
         })
@@ -114,40 +103,27 @@ describe('ch08_SchedulingMeetings', () => {
 
     test('runVersion1', () => {
         const program = Version1.schedule("Alice", "Bob", 1);
-        program.pipe(F.fork
-            (expectError)
-            (opt => expect(opt).toEqual(Some(MeetingTime(10, 11))))
-        );
+        Effect.runPromise(program)
+            .then(meeting => expect(meeting).toEqual(Some(MeetingTime(10, 11))))
+            .catch(e => expect(e.toJSON()).toHaveProperty('cause.failure.error.message', 'Connection error'));
     });
     // PROBLEM SOLVED: entangled concerns
 
     // PROBLEMS: no failure handling, signature lies
     // STEP 2: Introduce orElse
     test('introduceOrElse', () => {
-        const year = F.resolve(996);
-        const noYear = F.reject("no year");
+        const year = Effect.succeed(996);
+        const noYear = Effect.fail("no year");
 
-        const program1 = year.orElse(F.resolve(2020));
-        const program2 = noYear.orElse(F.resolve(2020));
-        const program3 = year.orElse(F.reject("can't recover"));
-        const program4 = noYear.orElse(F.reject("can't recover"));
+        const program1 = year.pipe(Effect.orElse(() => Effect.succeed(2020)));
+        const program2 = noYear.pipe(Effect.orElse(() => Effect.succeed(2020)));
+        const program3 = year.pipe(Effect.orElse(() => Effect.fail("can't recover")));
+        const program4 = noYear.pipe(Effect.orElse(() => Effect.fail("can't recover")));
 
-        program1.pipe(F.fork
-            (expectNothing)
-            (v => expect(v).toEqual(996))
-        );
-        program2.pipe(F.fork
-            (expectNothing)
-            (v => expect(v).toEqual(2020))
-        );
-        program3.pipe(F.fork
-            (expectNothing)
-            (v => expect(v).toEqual(996))
-        );
-        program4.pipe(F.fork
-            ((e) => expect(e).toBe("can't recover"))
-            (expectNothing)
-        );
+        expect(Effect.runSync(program1)).toEqual(996);
+        expect(Effect.runSync(program2)).toEqual(2020);
+        expect(Effect.runSync(program3)).toEqual(996);
+        expect(() => Effect.runSync(program4)).toThrow("can't recover");
     });
 
     const Version2 = {
@@ -156,34 +132,21 @@ describe('ch08_SchedulingMeetings', () => {
          * @param {string} person1 
          * @param {string} person2 
          * @param {number} lengthHours 
-         * @returns 
          */
-        schedule: (person1, person2, lengthHours) => F.go(function* () {
-            const existingMeetings = yield scheduledMeetings(person1, person2)
-                .orElse(scheduledMeetings(person1, person2))
-                .orElse(F.resolve(List()));
+        schedule: (person1, person2, lengthHours) => Effect.gen(function* () {
+            const existingMeetings = yield* scheduledMeetings(person1, person2)
+                .pipe(Effect.orElse(() => scheduledMeetings(person1, person2)))
+                .pipe(Effect.orElse(() => Effect.succeed(List())));
             const meetings = possibleMeetings(existingMeetings, 8, 16, lengthHours);
             return meetings.headOption();
         })
     }
 
     test('runVersion2', () => {
-        Version2.schedule("Alice", "Bob", 1).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting.forall(meeting => meeting.endHour - meeting.startHour == 1)).toBe(true))
-        );
-        Version2.schedule("Alice", "Bob", 2).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting.forall(meeting => meeting.endHour - meeting.startHour == 2)).toBe(true))
-        );
-        Version2.schedule("Alice", "Bob", 3).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting.forall(meeting => meeting.endHour - meeting.startHour == 3)).toBe(true))
-        );
-        Version2.schedule("Alice", "Bob", 4).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting.forall(meeting => meeting.endHour - meeting.startHour == 4)).toBe(true))
-        );
+        expect(Effect.runSync(Version2.schedule("Alice", "Bob", 1)).forall(meeting => meeting.endHour - meeting.startHour == 1)).toBe(true)
+        expect(Effect.runSync(Version2.schedule("Alice", "Bob", 2)).forall(meeting => meeting.endHour - meeting.startHour == 2)).toBe(true)
+        expect(Effect.runSync(Version2.schedule("Alice", "Bob", 3)).forall(meeting => meeting.endHour - meeting.startHour == 3)).toBe(true)
+        expect(Effect.runSync(Version2.schedule("Alice", "Bob", 4)).forall(meeting => meeting.endHour - meeting.startHour == 4)).toBe(true)
     });
     // PROBLEM SOLVED: no failure handling
 
@@ -199,17 +162,17 @@ describe('ch08_SchedulingMeetings', () => {
          * @param {number} lengthHours 
          * @returns 
          */
-        schedule: (person1, person2, lengthHours) => F.go(function* () {
-            const existingMeetings = yield scheduledMeetings(person1, person2)
-                .orElse(scheduledMeetings(person1, person2))
-                .orElse(F.resolve(List()));
+        schedule: (person1, person2, lengthHours) => Effect.gen(function* () {
+            const existingMeetings = yield* scheduledMeetings(person1, person2)
+                .pipe(Effect.orElse(() => scheduledMeetings(person1, person2)))
+                .pipe(Effect.orElse(() => Effect.succeed(List())));
 
             const meetings = possibleMeetings(existingMeetings, 8, 16, lengthHours);
             const possibleMeeting = meetings.headOption();
 
-            yield possibleMeeting.caseOf({
+            yield* possibleMeeting.caseOf({
                 Some: meeting => createMeeting(List.of(person1, person2), meeting),
-                None: () => F.resolve()
+                None: () => Effect.succeed()
             })
 
             return possibleMeeting;
@@ -217,22 +180,10 @@ describe('ch08_SchedulingMeetings', () => {
     }
 
     test('runVersion3', () => {
-        Version3.schedule("Alice", "Bob", 1).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting.forall(meeting => meeting.endHour - meeting.startHour == 1)).toBe(true))
-        );
-        Version3.schedule("Alice", "Bob", 2).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting.forall(meeting => meeting.endHour - meeting.startHour == 2)).toBe(true))
-        );
-        Version3.schedule("Alice", "Bob", 3).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting.forall(meeting => meeting.endHour - meeting.startHour == 3)).toBe(true))
-        );
-        Version3.schedule("Alice", "Bob", 4).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting.forall(meeting => meeting.endHour - meeting.startHour == 4)).toBe(true))
-        );
+        expect(Effect.runSync(Version3.schedule("Alice", "Bob", 1)).forall(meeting => meeting.endHour - meeting.startHour == 1)).toBe(true)
+        expect(Effect.runSync(Version3.schedule("Alice", "Bob", 2)).forall(meeting => meeting.endHour - meeting.startHour == 2)).toBe(true)
+        expect(Effect.runSync(Version3.schedule("Alice", "Bob", 3)).forall(meeting => meeting.endHour - meeting.startHour == 3)).toBe(true)
+        expect(Effect.runSync(Version3.schedule("Alice", "Bob", 4)).forall(meeting => meeting.endHour - meeting.startHour == 4)).toBe(true)
     });
     // PROBLEM SOLVED: signature lies
 
@@ -244,19 +195,15 @@ describe('ch08_SchedulingMeetings', () => {
      */
     const retry = (action, maxRetries) => List(range(0, maxRetries))
         .map(always(action))
-        .reduce((program, retryAction) => program.orElse(retryAction), action);
+        .reduce((program, retryAction) => program.pipe(Effect.orElse(() => retryAction)), action);
 
     test('runRetries', () => {
         const fn = jest.fn(() => {
             throw new Error("failed");
         })
-        retry(
-            F.attempt(fn),
-            10
-        ).pipe(F.fork
-            (e => expect(e.message).toBe("failed"))
-            (expectNothing)
-        );
+        Effect.runPromise(
+            retry(Effect.try(fn), 10)
+        ).catch(e => expect(e.toJSON()).toHaveProperty('cause.failure.error.message', 'failed'));
         expect(fn).toHaveBeenCalledTimes(11);
     })
 
@@ -267,15 +214,15 @@ describe('ch08_SchedulingMeetings', () => {
          * @param {string} person2 
          * @param {number} lengthHours 
          */
-        schedule: (person1, person2, lengthHours) => F.go(function* () {
-            const existingMeetings = yield retry(scheduledMeetings(person1, person2), 10)
-                .orElse(F.resolve(List()));
+        schedule: (person1, person2, lengthHours) => Effect.gen(function* () {
+            const existingMeetings = yield* retry(scheduledMeetings(person1, person2), 10)
+                .pipe(Effect.orElse(() => Effect.succeed(List())));
             const meetings = possibleMeetings(existingMeetings, 8, 16, lengthHours);
             const possibleMeeting = meetings.headOption();
 
-            yield possibleMeeting.caseOf({
+            yield* possibleMeeting.caseOf({
                 Some: meeting => retry(createMeeting(List.of(person1, person2), meeting), 10),
-                None: () => F.resolve()
+                None: () => Effect.succeed()
             });
 
             return possibleMeeting;
@@ -283,22 +230,10 @@ describe('ch08_SchedulingMeetings', () => {
     }
 
     test('runVersion4', () => {
-        Version4.schedule("Alice", "Bob", 1).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting).toEqual(Some(MeetingTime(10, 11))))
-        );
-        Version4.schedule("Alice", "Bob", 2).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting).toEqual(Some(MeetingTime(12, 14))))
-        );
-        Version4.schedule("Alice", "Bob", 3).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting).toEqual(Some(MeetingTime(12, 15))))
-        );
-        Version4.schedule("Alice", "Bob", 4).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting).toEqual(Some(MeetingTime(12, 16))))
-        );
+        expect(Effect.runSync(Version4.schedule("Alice", "Bob", 1))).toEqual(Some(MeetingTime(10, 11)));
+        expect(Effect.runSync(Version4.schedule("Alice", "Bob", 2))).toEqual(Some(MeetingTime(12, 14)));
+        expect(Effect.runSync(Version4.schedule("Alice", "Bob", 3))).toEqual(Some(MeetingTime(12, 15)));
+        expect(Effect.runSync(Version4.schedule("Alice", "Bob", 4))).toEqual(Some(MeetingTime(12, 16)));
     })
 
     // STEP 5: any number of people attending
@@ -306,9 +241,9 @@ describe('ch08_SchedulingMeetings', () => {
      * NOTE: alternative to List of IO flatten
      * @param {List<string>} attendees 
      */
-    const scheduledMeetingsList = (attendees) => F.parallel(3)(
-        attendees.map(attendee => retry(calendarEntries(attendee), 10)).toArray()
-    ).pipe(F.map(lists => List(lists).flatten()))
+    const scheduledMeetingsList = (attendees) => Effect.all(
+        attendees.map(attendee => retry(calendarEntries(attendee), 10)) // no need toArray
+    ).pipe(Effect.map(lists => List(lists).flatten()));
 
     const Version5 = { // FINAL VERSION: also presented at the beginning of the chapter
         /**
@@ -316,13 +251,13 @@ describe('ch08_SchedulingMeetings', () => {
          * @param {List<string>} attendees 
          * @param {number} lengthHours 
          */
-        schedule: (attendees, lengthHours) => F.go(function* () {
-            const existingMeetings = yield scheduledMeetingsList(attendees);
+        schedule: (attendees, lengthHours) => Effect.gen(function* () {
+            const existingMeetings = yield* scheduledMeetingsList(attendees);
             const possibleMeeting = possibleMeetings(existingMeetings, 8, 16, lengthHours).headOption();
 
-            yield possibleMeeting.caseOf({
+            yield* possibleMeeting.caseOf({
                 Some: meeting => createMeeting(attendees, meeting),
-                None: () => F.resolve()
+                None: () => Effect.succeed()
             })
 
             return possibleMeeting;
@@ -333,26 +268,11 @@ describe('ch08_SchedulingMeetings', () => {
         // note we can assert on fixed results here because
         // there is only a very very small chance we'll use a fallback
         // (because there is a 10-retry strategy in this version)
-        Version5.schedule(List.of("Alice", "Bob"), 1).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting).toEqual(Some(MeetingTime(10, 11))))
-        );
-        Version5.schedule(List.of("Alice", "Bob"), 2).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting).toEqual(Some(MeetingTime(12, 14))))
-        );
-        Version5.schedule(List.of("Alice", "Bob"), 3).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting).toEqual(Some(MeetingTime(12, 15))))
-        );
-        Version5.schedule(List.of("Alice", "Bob"), 4).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting).toEqual(Some(MeetingTime(12, 16))))
-        );
-        Version5.schedule(List.of("Alice", "Bob", "Charlie"), 1).pipe(F.fork
-            (expectNothing)
-            (meeting => expect(meeting.forall(meeting => meeting.endHour - meeting.startHour == 1)).toBe(true))
-        );
+        expect(Effect.runSync(Version5.schedule(List.of("Alice", "Bob"), 1))).toEqual(Some(MeetingTime(10, 11)));
+        expect(Effect.runSync(Version5.schedule(List.of("Alice", "Bob"), 2))).toEqual(Some(MeetingTime(12, 14)));
+        expect(Effect.runSync(Version5.schedule(List.of("Alice", "Bob"), 3))).toEqual(Some(MeetingTime(12, 15)));
+        expect(Effect.runSync(Version5.schedule(List.of("Alice", "Bob"), 4))).toEqual(Some(MeetingTime(12, 16)));
+        expect(Effect.runSync(Version5.schedule(List.of("Alice", "Bob", "Charlie"), 1)).forall(meeting => meeting.endHour - meeting.startHour == 1)).toBe(true)
     })
 
     // BONUS: scheduledMeetings using foldLeft instead of sequence:
@@ -363,29 +283,20 @@ describe('ch08_SchedulingMeetings', () => {
          */
         const scheduledMeetings = (attendees) => attendees
             .map(attendee => retry(calendarEntries(attendee), 10))
-            .reduce((allMeetingsProgram, attendeeMeetingsProgram) => F.go(function* () {
-                const allMeetings = yield allMeetingsProgram;
-                const attendeeMeetings = yield attendeeMeetingsProgram;
+            .reduce((allMeetingsProgram, attendeeMeetingsProgram) => Effect.gen(function* () {
+                const allMeetings = yield* allMeetingsProgram;
+                const attendeeMeetings = yield* attendeeMeetingsProgram;
                 return allMeetings.concat(attendeeMeetings);
-            }), F.resolve(List()));
+            }), Effect.succeed(List()));
 
-        scheduledMeetings(List.of("Alice", "Bob")).pipe(F.fork
-            (expectNothing)
-            (meetings => expect(meetings).toEqual(List.of(
-                MeetingTime(8, 10),
-                MeetingTime(11, 12),
-                MeetingTime(9, 10)
-            )))
-        )
+        expect(Effect.runSync(scheduledMeetings(List.of("Alice", "Bob")))).toEqual(List.of(
+            MeetingTime(8, 10),
+            MeetingTime(11, 12),
+            MeetingTime(9, 10)
+        ));
 
-        scheduledMeetings(List.of("Alice", "Bob", "Charlie")).pipe(F.fork
-            (expectNothing)
-            (meetings => expect(meetings.size).toEqual(4))
-        )
+        expect(Effect.runSync(scheduledMeetings(List.of("Alice", "Bob", "Charlie"))).size).toEqual(4);
 
-        scheduledMeetings(List()).pipe(F.fork
-            (expectNothing)
-            (meetings => expect(meetings).toEqual(List()))
-        )
+        expect(Effect.runSync(scheduledMeetings(List()))).toEqual(List());
     })
 });
