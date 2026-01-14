@@ -1,5 +1,5 @@
-import { Data, Effect, Stream } from "effect"
-import { List, Map, None, Some, StreamToList } from '../src/libs'
+import { Data, Effect, Option, Stream } from "effect"
+import { List, Map, None, Some, StreamToList, MaybeToOption, multiply } from '../src/libs'
 
 describe('ch09_CurrencyExchange', () => {
 
@@ -417,5 +417,46 @@ describe('ch09_CurrencyExchange', () => {
     expect(stream3.pipe(StreamToList).pipe(Effect.runSync)).toEqual(List.of(996))
 
     expect(() => stream4.pipe(StreamToList).pipe(Effect.runSync)).toThrow("can't recover")
+  })
+
+  /** STEP 3: Using Stream
+    */
+  const rates = (from, to) =>
+    Stream.fromEffect(exchangeTable(from)).pipe(
+      Stream.forever,
+      Stream.map(extractSingleCurrencyRate(to)),
+      Stream.filterMap(MaybeToOption),
+      Stream.orElse(() => rates(from, to))
+    )
+
+  const firstThreeRates = rates(Currency("USD"), Currency("EUR")).pipe(Stream.take(3))
+
+  test('runFirstThreeRates', () => {
+    expect(firstThreeRates.pipe(StreamToList).pipe(Effect.runSync).size).toEqual(3)
+  })
+
+  const Version3 = {
+    /**
+     * 
+     * @param {number} amount 
+     * @param {Currency} from 
+     * @param {Currency} to 
+     */
+    exchangeIfTrending(amount, from, to) {
+      return rates(from, to).pipe(
+        Stream.sliding(3),
+        Stream.map(List),
+        Stream.filter(trending),
+        Stream.map(x => x.last()),
+        Stream.take(1),
+        Stream.runLast,
+        Effect.map(Option.getOrThrow),
+        Effect.map(multiply(amount))
+      )
+    }
+  }
+
+  test('runVersion3', () => {
+    expect(Version3.exchangeIfTrending(1000, Currency("USD"), Currency("EUR")).pipe(Effect.runSync)).toBeGreaterThan(750)
   })
 })

@@ -95,11 +95,13 @@ Map.prototype.getOption = function getOption(key) {
 
 const ffor = (fn) => (...args) => liftN(args.length, fn)(...args);
 
-import { Effect, Stream } from 'effect';
+import { Effect, Stream, Option } from 'effect';
 
 const StreamToList = (stream) => stream
     .pipe(Stream.runCollect)
     .pipe(Effect.map(List))
+
+const MaybeToOption = (maybe) => maybe.caseOf({ Some: (value) => Option.some(value), None: () => Option.none() })
 
 /* eslint-enable */
 
@@ -121,4 +123,5 @@ export {
     Either,
     ffor,
     StreamToList,
+    MaybeToOption,
 }
