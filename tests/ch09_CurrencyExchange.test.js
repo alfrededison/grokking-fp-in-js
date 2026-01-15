@@ -1,4 +1,4 @@
-import { Data, Effect, Option, Stream } from "effect"
+import { Data, Duration, Effect, Option, Schedule, Stream } from "effect"
 import { List, Map, None, Some, StreamToList, MaybeToOption, multiply } from '../src/libs'
 
 describe('ch09_CurrencyExchange', () => {
@@ -459,4 +459,53 @@ describe('ch09_CurrencyExchange', () => {
   test('runVersion3', () => {
     expect(Version3.exchangeIfTrending(1000, Currency("USD"), Currency("EUR")).pipe(Effect.runSync)).toBeGreaterThan(750)
   })
+
+  /** STEP 4: Combining streams
+    */
+  const delay = Duration.seconds(1)
+  const ticks = Stream.fromSchedule(Schedule.fixed(delay))
+
+  test('ratesZipTicks', async () => {
+    const firstThreeRates = rates(Currency("USD"), Currency("EUR")).pipe(
+      Stream.zipLeft(ticks),
+      Stream.take(3),
+      StreamToList
+    )
+    expect((await firstThreeRates.pipe(Effect.runPromise)).size).toEqual(3)
+  })
+
+  test('ratesZipLeftTicks', async () => {
+    const firstThreeRates = rates(Currency("USD"), Currency("EUR")).pipe(
+      Stream.zipLeft(ticks),
+      Stream.take(3),
+      StreamToList
+    )
+    expect((await firstThreeRates.pipe(Effect.runPromise)).size).toEqual(3)
+  })
+
+  const Version4 = {
+    /**
+     * 
+     * @param {number} amount 
+     * @param {Currency} from 
+     * @param {Currency} to 
+     */
+    exchangeIfTrending(amount, from, to) {
+      return rates(from, to).pipe(
+        Stream.zipLeft(ticks),
+        Stream.sliding(3),
+        Stream.map(List),
+        Stream.filter(trending),
+        Stream.map(x => x.last()),
+        Stream.take(1),
+        Stream.runLast,
+        Effect.map(Option.getOrThrow),
+        Effect.map(multiply(amount))
+      )
+    }
+  }
+
+  test('runVersion4', async () => {
+    expect(await Version4.exchangeIfTrending(1000, Currency("USD"), Currency("EUR")).pipe(Effect.runPromise)).toBeGreaterThan(750)
+  }, 30e3)
 })
