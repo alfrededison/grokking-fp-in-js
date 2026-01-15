@@ -4,7 +4,7 @@ export * from 'ramda';
 // Consolidate Types and FP utils
 import { liftN, any } from 'ramda';
 import { Record, List, Set, Map, Repeat, Range } from 'immutable';
-import * as Futils from 'futils';
+import Futils from 'futils';
 
 const { Maybe, Either } = Futils.data;
 const { Some, None } = Maybe;

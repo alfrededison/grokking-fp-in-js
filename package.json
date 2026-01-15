@@ -6,12 +6,15 @@
   "scripts": {
     "test": "jest",
     "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix"
+    "lint:fix": "eslint src/ --fix",
+    "ch10": "babel-node scripts/ch10_CastingDieConcurrently.js"
   },
   "author": "Hieu Nguyen",
   "license": "ISC",
   "devDependencies": {
+    "@babel/cli": "^7.28.6",
     "@babel/core": "^7.28.5",
+    "@babel/node": "^7.28.6",
     "@babel/preset-env": "^7.28.5",
     "babel-jest": "^30.2.0",
     "eslint": "^9.39.2",

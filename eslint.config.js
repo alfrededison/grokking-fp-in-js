@@ -25,7 +25,7 @@ export default [
   },
   // Relax expression statement rule in tests and build config
   {
-    files: ["**/*.test.js"],
+    files: ["**/*.test.js", "scripts/*.js"],
     rules: {
       "functional/no-expression-statements": "off"
     }
